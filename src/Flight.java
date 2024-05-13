@@ -13,8 +13,8 @@ public class Flight {
     private Queue<Passenger> businessClassWaitList = new LinkedList<>();
     private Queue<Passenger> economyClassWaitList = new LinkedList<>();
 
-    public Flight(int flightNumber, String departureAirport, Date departureDate, String arrivalAirport, int NoOfFirstClassSeats,
-                  int NoOfbusinessClassSeats,int NoOfeconomyClassSeats) {
+    public Flight(int flightNumber, String departureAirport, Date departureDate, String arrivalAirport,
+                  int noOfFirstClassSeats, int noOfBusinessClassSeats, int noOfEconomyClassSeats) {
         this.flightNumber = flightNumber;
         this.departureAirport = departureAirport;
         this.departureDate = departureDate;
@@ -22,50 +22,57 @@ public class Flight {
         this.firstClassSeats = new ArrayList<>();
         this.businessClassSeats = new ArrayList<>();
         this.economyClassSeats = new ArrayList<>();
-        GenerateSeats(NoOfbusinessClassSeats,NoOfeconomyClassSeats,NoOfFirstClassSeats);
+        generateSeats(noOfFirstClassSeats, noOfBusinessClassSeats, noOfEconomyClassSeats);
     }
 
-    private void GenerateSeats(int firstClass, int businessClass, int economyClass) {
+    private void generateSeats(int firstClass, int businessClass, int economyClass) {
         for (int i = 1; i <= firstClass; i++) {
-            this.firstClassSeats.add(new Seat(i));
+            this.firstClassSeats.add(new Seat(i, "First"));
         }
         for (int i = 1; i <= businessClass; i++) {
-            this.businessClassSeats.add(new Seat(firstClass + i));
+            this.businessClassSeats.add(new Seat(firstClass + i, "Business"));
         }
         for (int i = 1; i <= economyClass; i++) {
-            this.economyClassSeats.add(new Seat(firstClass + businessClass + i));
+            this.economyClassSeats.add(new Seat(firstClass + businessClass + i, "Economy"));
         }
-    }
-    private List<Seat> selectSeatList(String classType) {
-        if (classType.equalsIgnoreCase("first")) {
-            return firstClassSeats;
-        } else if (classType.equalsIgnoreCase("business")) {
-            return businessClassSeats;
-        } else if (classType.equalsIgnoreCase("economy")) {
-            return economyClassSeats;
-        }
-        return null; // Return null if an invalid class type is specified
     }
 
-    public boolean bookPassenger(Passenger passenger, String classType) {
-        List<Seat> seats = selectSeatList(classType.toLowerCase());
+    private List<Seat> selectSeatList(String classType) {
+        switch (classType.toLowerCase()) {
+            case "first":
+                return firstClassSeats;
+            case "business":
+                return businessClassSeats;
+            case "economy":
+                return economyClassSeats;
+            default:
+                return null;
+        }
+    }
+
+    public String bookPassenger(Passenger passenger, String classType) {
+        List<Seat> seats = selectSeatList(classType);
         if (seats == null) {
             System.out.println("Invalid class type specified.");
-            return false;
+            return null;
         }
 
         for (Seat seat : seats) {
             if (!seat.isBooked()) {
-                seat.bookSeat(passenger);
-                return true;
+                String bookingRef = generateBookingRef();
+                seat.bookSeat(passenger, bookingRef);
+                System.out.println("Booking successful. Reference number: " + bookingRef);
+                return bookingRef;
             }
         }
 
-
         addToWaitList(passenger, classType);
-        return false;
+        return null;
     }
 
+    private String generateBookingRef() {
+        return flightNumber + "-" + UUID.randomUUID().toString().substring(0, 8); // Include flight number in the booking reference
+    }
 
     public void handlePassengerBooking(Passenger passenger, String classType) {
         if (isPassengerBookedAnywhere(passenger)) {
@@ -73,17 +80,65 @@ public class Flight {
             return;
         }
 
-        if (!bookPassenger(passenger, classType)) {
+        String bookingRef = bookPassenger(passenger, classType);
+        if (bookingRef == null) {
             int position = addToWaitList(passenger, classType);
             System.out.println("No available seats. Passenger added to waitlist at position: " + position);
-        } else {
-            System.out.println("Passenger booked successfully.");
         }
     }
 
-    //Linear search small data size
+    public boolean cancelBookingByRef(String bookingRef, Passenger currentLoggedPassenger) {
+        Seat seat = findSeatByBookingRef(bookingRef);
+        if (seat == null) {
+            System.out.println("Booking reference not found.");
+            return false;
+        }
+        if (seat.getPassenger() == currentLoggedPassenger) {
+            seat.cancelSeat();
+            System.out.println("Booking with reference " + bookingRef + " has been canceled.");
+            Passenger nextPassenger = getNextPassengerFromWaitList(seat.getClassType());
+            if (nextPassenger != null) {
+                bookPassenger(nextPassenger, seat.getClassType());
+                System.out.println("Next passenger in line: " + nextPassenger.getName());
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private Seat findSeatByBookingRef(String bookingRef) {
+        for (Seat seat : firstClassSeats) {
+            if (bookingRef.equals(seat.getBookingRef())) {
+                return seat;
+            }
+        }
+        for (Seat seat : businessClassSeats) {
+            if (bookingRef.equals(seat.getBookingRef())) {
+                return seat;
+            }
+        }
+        for (Seat seat : economyClassSeats) {
+            if (bookingRef.equals(seat.getBookingRef())) {
+                return seat;
+            }
+        }
+        return null;
+    }
+
+    private Passenger getNextPassengerFromWaitList(String classType) {
+        switch (classType.toLowerCase()) {
+            case "first":
+                return firstClassWaitList.poll();
+            case "business":
+                return businessClassWaitList.poll();
+            case "economy":
+                return economyClassWaitList.poll();
+            default:
+                return null;
+        }
+    }
+
     public boolean checkIfPassengerIsBookedIn(Passenger passenger) {
-        // Check all seat lists to see if the passenger is already booked.
         return isPassengerInSeatsList(firstClassSeats, passenger) ||
                 isPassengerInSeatsList(businessClassSeats, passenger) ||
                 isPassengerInSeatsList(economyClassSeats, passenger);
@@ -92,94 +147,106 @@ public class Flight {
     private boolean isPassengerInSeatsList(List<Seat> seats, Passenger passenger) {
         for (Seat seat : seats) {
             if (seat.isBooked() && seat.getPassenger().equals(passenger)) {
-                return true; // The passenger is already booked in one of the seats.
+                return true;
             }
         }
-        return false; // The passenger is not found in this class of seats.
+        return false;
     }
 
-    public int getAvailableSeats(String ClassType){
-
-        int count = 0;
-        switch (ClassType.toLowerCase()) {
-            case "first":
-
-                for(int i = 0 ;i<firstClassSeats.stream().count();i++){
-
-                    Seat seat = firstClassSeats.get(i);
-                    if(seat.isBooked() == false){
-                        count ++;
-                    }
-                }
-
-                break;
-
-            case "business":
-                for(int i = 0 ;i<businessClassSeats.stream().count();i++){
-
-                    Seat seat = businessClassSeats.get(i);
-                    if(seat.isBooked() == false){
-                        count ++;
-                    }
-                }
-                break;
-            case "economy":
-                for(int i = 0 ;i<economyClassSeats.stream().count();i++){
-
-                    Seat seat = economyClassSeats.get(i);
-                    if(seat.isBooked() == false){
-                        count ++;
-                    }
-                }
-                break;
+    public int getAvailableSeats(String classType) {
+        List<Seat> seats = selectSeatList(classType);
+        if (seats == null) {
+            System.out.println("Invalid class type specified.");
+            return 0;
         }
 
+        int count = 0;
+        for (Seat seat : seats) {
+            if (!seat.isBooked()) {
+                count++;
+            }
+        }
         return count;
-
     }
 
-
     public int addToWaitList(Passenger passenger, String classType) {
+        if (isPassengerBookedAnywhere(passenger)) {
+            System.out.println("Passenger is already booked. Cannot add to waitlist.");
+            return -1; // Indicate failure to add to waitlist
+        }
+
         Queue<Passenger> waitList = getWaitList(classType);
         if (waitList == null) {
             System.out.println("Invalid class type for waitlist: " + classType);
-            return -1; // Invalid class type
+            return -1;
         }
 
         if (!waitList.contains(passenger)) {
             waitList.add(passenger);
         }
-        // Return the position (1-indexed for user readability)
         return new ArrayList<>(waitList).indexOf(passenger) + 1;
     }
 
     private Queue<Passenger> getWaitList(String classType) {
         switch (classType.toLowerCase()) {
-            case "first": return firstClassWaitList;
-            case "business": return businessClassWaitList;
-            case "economy": return economyClassWaitList;
-            default: return null; // Handle invalid class type
+            case "first":
+                return firstClassWaitList;
+            case "business":
+                return businessClassWaitList;
+            case "economy":
+                return economyClassWaitList;
+            default:
+                return null;
         }
     }
 
+    public boolean removeFromWaitList(Passenger passenger) {
+        boolean removed = false;
+        Passenger nextPassenger = null;
+
+        if (firstClassWaitList.remove(passenger)) {
+            removed = true;
+            nextPassenger = firstClassWaitList.peek();
+        } else if (businessClassWaitList.remove(passenger)) {
+            removed = true;
+            nextPassenger = businessClassWaitList.peek();
+        } else if (economyClassWaitList.remove(passenger)) {
+            removed = true;
+            nextPassenger = economyClassWaitList.peek();
+        }
+
+        if (removed) {
+            System.out.println("Passenger removed from waitlist.");
+            if (nextPassenger != null) {
+                System.out.println("Next passenger in line: " + nextPassenger.getName());
+            }
+        } else {
+            System.out.println("Passenger was not found in any waitlist.");
+        }
+
+        return removed;
+    }
+
+    public boolean isPassengerInWaitlist(Passenger passenger) {
+        return firstClassWaitList.contains(passenger) ||
+                businessClassWaitList.contains(passenger) ||
+                economyClassWaitList.contains(passenger);
+    }
 
     public boolean isPassengerBookedAnywhere(Passenger passenger) {
-        // Check if passenger is booked on any seat
-        if (isPassengerInSeatsList(firstClassSeats, passenger) ||
+        return isPassengerInSeatsList(firstClassSeats, passenger) ||
                 isPassengerInSeatsList(businessClassSeats, passenger) ||
-                isPassengerInSeatsList(economyClassSeats, passenger)) {
-            return true; // Passenger is booked in a seat
-        }
-
-        // Check if passenger is on any waitlist
-        return isPassengerInWaitlist(firstClassWaitList, passenger) ||
-                isPassengerInWaitlist(businessClassWaitList, passenger) ||
-                isPassengerInWaitlist(economyClassWaitList, passenger);
+                isPassengerInSeatsList(economyClassSeats, passenger) ||
+                isPassengerInWaitlist(passenger);
     }
 
-
-    private boolean isPassengerInWaitlist(Queue<Passenger> waitlist, Passenger passenger) {
-        return waitlist.contains(passenger);
+    @Override
+    public String toString() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        return "Flight No: " + flightNumber +
+                ", Date: " + sdf.format(departureDate) +
+                ", From: " + departureAirport +
+                " to " + arrivalAirport;
     }
 
     public void cancelBooking(Passenger passenger) {
@@ -242,14 +309,7 @@ public class Flight {
         this.economyClassSeats = economyClassSeats;
     }
 
-    @Override
-    public String toString() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        return "Flight No: " + flightNumber +
-                ", Date: " + sdf.format(departureDate) +
-                ", From: " + departureAirport +
-                " to " + arrivalAirport;
-    }
+
 
 
 }
