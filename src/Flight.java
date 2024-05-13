@@ -66,6 +66,21 @@ public class Flight {
         return false;
     }
 
+
+    public void handlePassengerBooking(Passenger passenger, String classType) {
+        if (isPassengerBookedAnywhere(passenger)) {
+            System.out.println("Passenger is already booked or on a waitlist.");
+            return;
+        }
+
+        if (!bookPassenger(passenger, classType)) {
+            int position = addToWaitList(passenger, classType);
+            System.out.println("No available seats. Passenger added to waitlist at position: " + position);
+        } else {
+            System.out.println("Passenger booked successfully.");
+        }
+    }
+
     //Linear search small data size
     public boolean checkIfPassengerIsBookedIn(Passenger passenger) {
         // Check all seat lists to see if the passenger is already booked.
@@ -125,18 +140,46 @@ public class Flight {
 
 
     public int addToWaitList(Passenger passenger, String classType) {
-        switch (classType.toLowerCase()) {
-            case "first":
-                firstClassWaitList.add(passenger);
-                break;
-            case "business":
-                businessClassWaitList.add(passenger);
-                break;
-            case "economy":
-                economyClassWaitList.add(passenger);
-                break;
+        Queue<Passenger> waitList = getWaitList(classType);
+        if (waitList == null) {
+            System.out.println("Invalid class type for waitlist: " + classType);
+            return -1; // Invalid class type
         }
-        return 0;
+
+        if (!waitList.contains(passenger)) {
+            waitList.add(passenger);
+        }
+        // Return the position (1-indexed for user readability)
+        return new ArrayList<>(waitList).indexOf(passenger) + 1;
+    }
+
+    private Queue<Passenger> getWaitList(String classType) {
+        switch (classType.toLowerCase()) {
+            case "first": return firstClassWaitList;
+            case "business": return businessClassWaitList;
+            case "economy": return economyClassWaitList;
+            default: return null; // Handle invalid class type
+        }
+    }
+
+
+    public boolean isPassengerBookedAnywhere(Passenger passenger) {
+        // Check if passenger is booked on any seat
+        if (isPassengerInSeatsList(firstClassSeats, passenger) ||
+                isPassengerInSeatsList(businessClassSeats, passenger) ||
+                isPassengerInSeatsList(economyClassSeats, passenger)) {
+            return true; // Passenger is booked in a seat
+        }
+
+        // Check if passenger is on any waitlist
+        return isPassengerInWaitlist(firstClassWaitList, passenger) ||
+                isPassengerInWaitlist(businessClassWaitList, passenger) ||
+                isPassengerInWaitlist(economyClassWaitList, passenger);
+    }
+
+
+    private boolean isPassengerInWaitlist(Queue<Passenger> waitlist, Passenger passenger) {
+        return waitlist.contains(passenger);
     }
 
     public void cancelBooking(Passenger passenger) {

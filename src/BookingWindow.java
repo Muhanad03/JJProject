@@ -60,16 +60,9 @@ public class BookingWindow extends JFrame {
     }
 
     private void handleBooking(String classType) {
-        if (!flight.checkIfPassengerIsBookedIn(passenger)) {
-            boolean booked = flight.bookPassenger(passenger, classType);
-            if (booked) {
-                System.out.println("Passenger booked successfully.");
-            } else {
-                System.out.println("No available seats");
-            }
-        } else {
-            System.out.println("Passenger is already booked on this flight.");
-        }
+
+        flight.handlePassengerBooking(passenger, classType);
+
         updateSeatAvailability();
         updateWaitlistButtons();
     }

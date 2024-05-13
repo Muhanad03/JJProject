@@ -17,7 +17,6 @@ public class LoginWindow extends JFrame {
         loginButton.addActionListener(e -> {
             String username = userText.getText();
             Passenger p = new Passenger(username,0);
-            new MainWindow(p).setVisible(true);
             dispose();
         });
 

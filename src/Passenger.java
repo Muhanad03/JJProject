@@ -1,9 +1,22 @@
 public class Passenger {
 
-    public int id;
+    private int id;
+    private String name;
 
+    public Passenger(String name, int id) {
 
-    public Passenger(String johnDoe,int id) {
+        this.id = id;
+        this.name = name;
+    }
 
+    public String getName() {
+
+        return name;
+    }
+
+    @Override
+    public String toString() {
+
+        return name;
     }
 }

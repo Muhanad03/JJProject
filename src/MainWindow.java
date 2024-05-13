@@ -2,10 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 public class MainWindow extends JFrame {
@@ -13,15 +11,21 @@ public class MainWindow extends JFrame {
     private JList<Flight> flightList;
     private List<Flight> allFlights = new ArrayList<>();  // This will store all generated flights
 
-    Passenger passenger;
 
-    public MainWindow(Passenger passenger) {
+    //THis handles the account switching
+    private UserManagement userManager;
+    private JComboBox<Passenger> userDropdown;
+
+
+
+    public MainWindow(UserManagement userManager) {
         setTitle("Flight Scheduler");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
-        this.passenger = passenger;
+        this.userManager = userManager;
+
         flightListModel = new DefaultListModel<>();
         generateFlights(50); // Generate 50 random flights
         flightList = new JList<>(flightListModel);
@@ -66,11 +70,37 @@ public class MainWindow extends JFrame {
                 if (evt.getClickCount() == 2) {
                     // Double-click detected, open the booking window
                     int index = list.locationToIndex(evt.getPoint());
-                    new BookingWindow(flightListModel.getElementAt(index),passenger).setVisible(true);
+                    new BookingWindow(flightListModel.getElementAt(index),userManager.getActiveUser()).setVisible(true);
                 }
             }
         });
+
+
+        initUserSwitcher();
     }
+
+    private void initUserSwitcher() {
+
+        System.out.println("Initializing user switcher with users count: " + userManager.getUsers().size());
+
+        JPanel panel = new JPanel(new FlowLayout()); // Using FlowLayout for simplicity
+        userDropdown = new JComboBox<>(new Vector<>(userManager.getUsers())); // Make sure users are added before this line is executed
+        JButton switchUserButton = new JButton("Switch User");
+
+        switchUserButton.addActionListener(e -> {
+            Passenger selectedUser = (Passenger) userDropdown.getSelectedItem();
+            userManager.setActiveUser(selectedUser);
+            JOptionPane.showMessageDialog(this, "Switched to user: " + selectedUser.getName());
+            // Optionally refresh the UI here to reflect the switch
+        });
+
+        panel.add(new JLabel("Switch User:"));
+        panel.add(userDropdown);
+        panel.add(switchUserButton);
+
+        add(panel,BorderLayout.SOUTH); // Ensure this is added to the JFrame correctly
+    }
+
     public void mergeSort(List<Flight> list) {
         if (list.size() > 1) {
             // Split the array in half
