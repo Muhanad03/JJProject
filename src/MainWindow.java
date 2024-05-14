@@ -70,6 +70,54 @@ public class MainWindow extends JFrame {
                 }
             }
         });
+
+        JPanel bottomPanel = new JPanel(new FlowLayout());
+        JButton viewFlightDetailsButton = new JButton("View Flight Details");
+        bottomPanel.add(viewFlightDetailsButton);
+        add(bottomPanel, BorderLayout.LINE_END);
+
+        viewFlightDetailsButton.addActionListener(e -> {
+            int selectedIndex = flightList.getSelectedIndex();
+            if (selectedIndex != -1) {
+                Flight selectedFlight = flightListModel.getElementAt(selectedIndex);
+                displayFlightDetails(selectedFlight);
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select a flight to view details.", "No Flight Selected", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+    }
+
+    private void displayFlightDetails(Flight flight) {
+        JFrame detailsFrame = new JFrame("Flight Details");
+        detailsFrame.setSize(400, 300);
+        detailsFrame.setLocationRelativeTo(null);
+
+        JTextArea detailsText = new JTextArea();
+        detailsText.setEditable(false);
+        detailsText.append("Flight Number: " + flight.getFlightNumber() + "\n");
+        detailsText.append("Departure Airport: " + flight.getDepartureAirport() + "\n");
+        detailsText.append("Arrival Airport: " + flight.getArrivalAirport() + "\n");
+        detailsText.append("Departure Date: " + flight.getDepartureDate() + "\n");
+        detailsText.append("Passengers:\n");
+
+        for (Seat seat : flight.getFirstClassSeats()) {
+            if (seat.isBooked()) {
+                detailsText.append("First Class Seat " + seat.getSeatNumber() + ": " + seat.getPassenger().getName() + "\n");
+            }
+        }
+        for (Seat seat : flight.getBusinessClassSeats()) {
+            if (seat.isBooked()) {
+                detailsText.append("Business Class Seat " + seat.getSeatNumber() + ": " + seat.getPassenger().getName() + "\n");
+            }
+        }
+        for (Seat seat : flight.getEconomyClassSeats()) {
+            if (seat.isBooked()) {
+                detailsText.append("Economy Class Seat " + seat.getSeatNumber() + ": " + seat.getPassenger().getName() + "\n");
+            }
+        }
+
+        detailsFrame.add(new JScrollPane(detailsText));
+        detailsFrame.setVisible(true);
     }
 
     private void initUserSwitcher() {
