@@ -6,15 +6,17 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Main application window class
 public class MainWindow extends JFrame {
-    private DefaultListModel<Flight> flightListModel;
-    private JList<Flight> flightList;
-    private List<Flight> allFlights = new ArrayList<>();  // This will store all generated flights
+    private DefaultListModel<Flight> flightListModel; // Model for storing flight data
+    private JList<Flight> flightList; // Component to display flights
+    private List<Flight> allFlights = new ArrayList<>(); // List to keep all generated flights
 
-    // This handles the account switching
+    // Handles user account switching
     private UserManagement userManager;
-    private JComboBox<Passenger> userDropdown;
+    private JComboBox<Passenger> userDropdown; // Dropdown menu for user selection
 
+    // Constructor for the MainWindow class
     public MainWindow(UserManagement userManager) {
         setTitle("Flight Scheduler");
         setSize(600, 400);
@@ -22,13 +24,13 @@ public class MainWindow extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         this.userManager = userManager;
-        initUserSwitcher();
+        initializeUserSwitcher(); // Set up user switcher
 
         flightListModel = new DefaultListModel<>();
-        generateFlights(50); // Generate 50 random flights
+        createFlights(50); // Create 50 random flights
         flightList = new JList<>(flightListModel);
         JScrollPane scrollPane = new JScrollPane(flightList);
-        add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER); // Add flight list to the center of the window
 
         JPanel searchPanel = new JPanel(new FlowLayout());
         JTextField searchField = new JTextField(20);
@@ -37,18 +39,17 @@ public class MainWindow extends JFrame {
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
-        add(searchPanel, BorderLayout.NORTH);
+        add(searchPanel, BorderLayout.NORTH); // Add search panel to the top of the window
 
+        // Action listener for search button
         searchButton.addActionListener(e -> {
             String searchText = searchField.getText();
             if (!searchText.isEmpty()) {
                 try {
                     int flightNumber = Integer.parseInt(searchText);
-                    List<Flight> filteredFlights = allFlights.stream()
-                            .filter(f -> f.getFlightNumber() == flightNumber)
-                            .collect(Collectors.toList());
+                    List<Flight> filteredFlights = binarySearchFlights(flightNumber);
                     if (!filteredFlights.isEmpty()) {
-                        updateFlightListModel(filteredFlights);
+                        updateFlightList(filteredFlights);
                     } else {
                         JOptionPane.showMessageDialog(this, "Flight not found", "Search Result", JOptionPane.INFORMATION_MESSAGE);
                     }
@@ -56,15 +57,16 @@ public class MainWindow extends JFrame {
                     JOptionPane.showMessageDialog(this, "Please enter a valid number", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                updateFlightListModel(allFlights); // Restore original flight list
+                updateFlightList(allFlights); // Restore the original flight list
             }
         });
 
+        // Mouse listener for double-clicks on the flight list
         flightList.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
-                JList list = (JList) evt.getSource();
+                JList<?> list = (JList<?>) evt.getSource();
                 if (evt.getClickCount() == 2) {
-                    // Double-click detected, open the booking window
+                    // Open booking window on double-click
                     int index = list.locationToIndex(evt.getPoint());
                     new BookingWindow(flightListModel.getElementAt(index), userManager.getActiveUser()).setVisible(true);
                 }
@@ -74,20 +76,22 @@ public class MainWindow extends JFrame {
         JPanel bottomPanel = new JPanel(new FlowLayout());
         JButton viewFlightDetailsButton = new JButton("View Flight Details");
         bottomPanel.add(viewFlightDetailsButton);
-        add(bottomPanel, BorderLayout.LINE_END);
+        add(bottomPanel, BorderLayout.LINE_END); // Add bottom panel to the right
 
+        // Action listener for viewing flight details
         viewFlightDetailsButton.addActionListener(e -> {
             int selectedIndex = flightList.getSelectedIndex();
             if (selectedIndex != -1) {
                 Flight selectedFlight = flightListModel.getElementAt(selectedIndex);
-                displayFlightDetails(selectedFlight);
+                showFlightDetails(selectedFlight);
             } else {
                 JOptionPane.showMessageDialog(this, "Please select a flight to view details.", "No Flight Selected", JOptionPane.WARNING_MESSAGE);
             }
         });
     }
 
-    private void displayFlightDetails(Flight flight) {
+    // Displays the details of a flight in a new window
+    private void showFlightDetails(Flight flight) {
         JFrame detailsFrame = new JFrame("Flight Details");
         detailsFrame.setSize(400, 300);
         detailsFrame.setLocationRelativeTo(null);
@@ -100,16 +104,19 @@ public class MainWindow extends JFrame {
         detailsText.append("Departure Date: " + flight.getDepartureDate() + "\n");
         detailsText.append("Passengers:\n");
 
+        // Append first class passengers
         for (Seat seat : flight.getFirstClassSeats()) {
             if (seat.isBooked()) {
                 detailsText.append("First Class Seat " + seat.getSeatNumber() + ": " + seat.getPassenger().getName() + "\n");
             }
         }
+        // Append business class passengers
         for (Seat seat : flight.getBusinessClassSeats()) {
             if (seat.isBooked()) {
                 detailsText.append("Business Class Seat " + seat.getSeatNumber() + ": " + seat.getPassenger().getName() + "\n");
             }
         }
+        // Append economy class passengers
         for (Seat seat : flight.getEconomyClassSeats()) {
             if (seat.isBooked()) {
                 detailsText.append("Economy Class Seat " + seat.getSeatNumber() + ": " + seat.getPassenger().getName() + "\n");
@@ -120,16 +127,18 @@ public class MainWindow extends JFrame {
         detailsFrame.setVisible(true);
     }
 
-    private void initUserSwitcher() {
-        System.out.println("Initializing user switcher with users count: " + userManager.getUsers().size());
+    // Sets up the user switcher interface
+    private void initializeUserSwitcher() {
+        System.out.println("Initializing user switcher with user count: " + userManager.getUsers().size());
 
         JPanel panel = new JPanel(new FlowLayout()); // Using FlowLayout for simplicity
-        userDropdown = new JComboBox<>(new Vector<>(userManager.getUsers())); // Make sure users are added before this line is executed
+        userDropdown = new JComboBox<>(new Vector<>(userManager.getUsers())); // Populate dropdown with users
         JButton switchUserButton = new JButton("Switch User");
-        JButton cancelFlightButton = new JButton("Cancel flight");
+        JButton cancelFlightButton = new JButton("Cancel Flight");
 
+        // Action listener for canceling a flight
         cancelFlightButton.addActionListener(e -> {
-            JFrame cancelFrame = new JFrame("Booking cancellation");
+            JFrame cancelFrame = new JFrame("Cancel Booking");
             cancelFrame.setSize(300, 100);
             cancelFrame.setLocationRelativeTo(null);
             cancelFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -138,10 +147,11 @@ public class MainWindow extends JFrame {
             cancelFrame.add(panel2);
             panel2.setLayout(new BoxLayout(panel2, BoxLayout.Y_AXIS));
 
-            JLabel bookingLabel = new JLabel("Booking ref:");
+            JLabel bookingLabel = new JLabel("Booking Reference:");
             JTextField bookingText = new JTextField(20);
-            JButton cancelBookingButton = new JButton("Cancel booking");
+            JButton cancelBookingButton = new JButton("Cancel Booking");
 
+            // Action listener for booking cancellation
             cancelBookingButton.addActionListener(e2 -> {
                 String bookingRef = bookingText.getText();
                 if (bookingRef.isEmpty()) {
@@ -164,10 +174,7 @@ public class MainWindow extends JFrame {
                     return;
                 }
 
-                Flight flight = allFlights.stream()
-                        .filter(f -> f.getFlightNumber() == flightNumber)
-                        .findFirst()
-                        .orElse(null);
+                Flight flight = binarySearchFlightByNumber(flightNumber);
 
                 if (flight == null) {
                     JOptionPane.showMessageDialog(cancelFrame, "Flight not found.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -192,6 +199,7 @@ public class MainWindow extends JFrame {
 
         panel.add(cancelFlightButton);
 
+        // Action listener for switching users
         switchUserButton.addActionListener(e -> {
             Passenger selectedUser = (Passenger) userDropdown.getSelectedItem();
             userManager.setActiveUser(selectedUser);
@@ -202,34 +210,35 @@ public class MainWindow extends JFrame {
         panel.add(userDropdown);
         panel.add(switchUserButton);
 
-        add(panel, BorderLayout.SOUTH); // Ensure this is added to the JFrame correctly
+        add(panel, BorderLayout.SOUTH); // Add panel to the bottom of the window
     }
 
-    private void generateFlights(int count) {
+    // Creates random flight data
+    private void createFlights(int count) {
         Random rand = new Random();
-        allFlights.clear();  // Clear previous data
+        allFlights.clear(); // Clear previous flights
 
-        // List of sample airports
+        // Sample airport codes
         String[] airports = {"JFK", "LAX", "ORD", "DFW", "DEN", "SFO", "SEA", "ATL", "MIA", "BOS"};
 
         // Generate random flights
         for (int i = 0; i < count; i++) {
             int flightNumber = rand.nextInt(900) + 100; // Ensure flight number is between 100 and 999
 
-            // Random departure and arrival airports
+            // Randomly select departure and arrival airports
             String departureAirport = airports[rand.nextInt(airports.length)];
             String arrivalAirport;
             do {
                 arrivalAirport = airports[rand.nextInt(airports.length)];
-            } while (departureAirport.equals(arrivalAirport));
+            } while (departureAirport.equals(arrivalAirport)); // Ensure departure and arrival are different
 
             // Random date within the next 30 days
             Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.DAY_OF_YEAR, rand.nextInt(30)); // Add random number of days to current date
+            calendar.add(Calendar.DAY_OF_YEAR, rand.nextInt(30)); // Add a random number of days to the current date
             Date departureDate = calendar.getTime();
 
             // Random seat capacities
-            int firstClassSeats = rand.nextInt(10) + 1;    // 1 to 10 seats
+            int firstClassSeats = rand.nextInt(10) + 1; // 1 to 10 seats
             int businessClassSeats = rand.nextInt(20) + 5; // 5 to 25 seats
             int economyClassSeats = rand.nextInt(50) + 20; // 20 to 70 seats
 
@@ -238,28 +247,86 @@ public class MainWindow extends JFrame {
             allFlights.add(flight);
         }
 
-        mergeSort(allFlights); // Sort the flights using merge sort
-        updateFlightListModel(allFlights);
+        sortFlights(allFlights); // Sort flights using merge sort
+        updateFlightList(allFlights);
     }
 
-    private void updateFlightListModel(List<Flight> flights) {
+    // Updates the flight list model
+    private void updateFlightList(List<Flight> flights) {
         flightListModel.clear();
         flights.forEach(flightListModel::addElement);
     }
 
-    public void mergeSort(List<Flight> list) {
+    // Binary search implementation for finding flights
+    private List<Flight> binarySearchFlights(int flightNumber) {
+        int left = 0;
+        int right = allFlights.size() - 1;
+        List<Flight> result = new ArrayList<>();
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Flight midFlight = allFlights.get(mid);
+
+            if (midFlight.getFlightNumber() == flightNumber) {
+                result.add(midFlight);
+                // Search for any additional flights with the same flight number
+                int leftIndex = mid - 1;
+                while (leftIndex >= left && allFlights.get(leftIndex).getFlightNumber() == flightNumber) {
+                    result.add(allFlights.get(leftIndex));
+                    leftIndex--;
+                }
+                int rightIndex = mid + 1;
+                while (rightIndex <= right && allFlights.get(rightIndex).getFlightNumber() == flightNumber) {
+                    result.add(allFlights.get(rightIndex));
+                    rightIndex++;
+                }
+                break;
+            } else if (midFlight.getFlightNumber() < flightNumber) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        return result;
+    }
+
+    // Binary search implementation for finding a single flight by number
+    private Flight binarySearchFlightByNumber(int flightNumber) {
+        int left = 0;
+        int right = allFlights.size() - 1;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Flight midFlight = allFlights.get(mid);
+
+            if (midFlight.getFlightNumber() == flightNumber) {
+                return midFlight;
+            } else if (midFlight.getFlightNumber() < flightNumber) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        return null; // Flight not found
+    }
+
+    // Merge sort implementation for sorting flights
+    public void sortFlights(List<Flight> list) {
         if (list.size() > 1) {
             int mid = list.size() / 2;
             List<Flight> leftHalf = new ArrayList<>(list.subList(0, mid));
             List<Flight> rightHalf = new ArrayList<>(list.subList(mid, list.size()));
 
-            mergeSort(leftHalf);
-            mergeSort(rightHalf);
+            sortFlights(leftHalf);
+            sortFlights(rightHalf);
 
             merge(list, leftHalf, rightHalf);
         }
     }
 
+    // Merges two halves of a list during merge sort
     private void merge(List<Flight> list, List<Flight> leftHalf, List<Flight> rightHalf) {
         int i = 0, j = 0, k = 0;
         while (i < leftHalf.size() && j < rightHalf.size()) {
