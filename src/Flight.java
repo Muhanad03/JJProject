@@ -13,6 +13,7 @@ public class Flight {
     private Queue<Passenger> businessClassWaitList = new LinkedList<>();
     private Queue<Passenger> economyClassWaitList = new LinkedList<>();
 
+    // Flight constructor to initialize flight details and generate seats
     public Flight(int flightNumber, String departureAirport, Date departureDate, String arrivalAirport,
                   int noOfFirstClassSeats, int noOfBusinessClassSeats, int noOfEconomyClassSeats) {
         this.flightNumber = flightNumber;
@@ -22,9 +23,10 @@ public class Flight {
         this.firstClassSeats = new ArrayList<>();
         this.businessClassSeats = new ArrayList<>();
         this.economyClassSeats = new ArrayList<>();
-        generateSeats(noOfFirstClassSeats, noOfBusinessClassSeats, noOfEconomyClassSeats);
+        generateSeats(noOfFirstClassSeats, noOfBusinessClassSeats, noOfEconomyClassSeats); // Generate seats for the flight
     }
 
+    // Generate seats for each class type
     private void generateSeats(int firstClass, int businessClass, int economyClass) {
         for (int i = 1; i <= firstClass; i++) {
             this.firstClassSeats.add(new Seat(i, "First"));
@@ -37,6 +39,7 @@ public class Flight {
         }
     }
 
+    // Select the seat list based on class type
     private List<Seat> selectSeatList(String classType) {
         switch (classType.toLowerCase()) {
             case "first":
@@ -50,6 +53,7 @@ public class Flight {
         }
     }
 
+    // Book a passenger in a specified class type
     public String bookPassenger(Passenger passenger, String classType) {
         List<Seat> seats = selectSeatList(classType);
         if (seats == null) {
@@ -66,14 +70,16 @@ public class Flight {
             }
         }
 
-        addToWaitList(passenger, classType);
+        addToWaitList(passenger, classType); // Add to waitlist if no seats available
         return null;
     }
 
+    // Generate a booking reference number
     private String generateBookingRef() {
         return flightNumber + "-" + UUID.randomUUID().toString().substring(0, 8); // Include flight number in the booking reference
     }
 
+    // Handle the booking process for a passenger
     public void handlePassengerBooking(Passenger passenger, String classType) {
         if (isPassengerBookedAnywhere(passenger)) {
             System.out.println("Passenger is already booked or on a waitlist.");
@@ -87,6 +93,7 @@ public class Flight {
         }
     }
 
+    // Cancel a booking by reference number and notify the next passenger on the waitlist
     public boolean cancelBookingByRef(String bookingRef, Passenger currentLoggedPassenger) {
         Seat seat = findSeatByBookingRef(bookingRef);
         if (seat == null) {
@@ -106,6 +113,7 @@ public class Flight {
         return false;
     }
 
+    // Find a seat by booking reference number
     private Seat findSeatByBookingRef(String bookingRef) {
         for (Seat seat : firstClassSeats) {
             if (bookingRef.equals(seat.getBookingRef())) {
@@ -125,6 +133,7 @@ public class Flight {
         return null;
     }
 
+    // Get the next passenger from the waitlist based on class type
     private Passenger getNextPassengerFromWaitList(String classType) {
         switch (classType.toLowerCase()) {
             case "first":
@@ -138,12 +147,14 @@ public class Flight {
         }
     }
 
+    // Check if a passenger is booked in any seat
     public boolean checkIfPassengerIsBookedIn(Passenger passenger) {
         return isPassengerInSeatsList(firstClassSeats, passenger) ||
                 isPassengerInSeatsList(businessClassSeats, passenger) ||
                 isPassengerInSeatsList(economyClassSeats, passenger);
     }
 
+    // Helper method to check if a passenger is in a list of seats
     private boolean isPassengerInSeatsList(List<Seat> seats, Passenger passenger) {
         for (Seat seat : seats) {
             if (seat.isBooked() && seat.getPassenger().equals(passenger)) {
@@ -153,6 +164,7 @@ public class Flight {
         return false;
     }
 
+    // Get the number of available seats for a given class
     public int getAvailableSeats(String classType) {
         List<Seat> seats = selectSeatList(classType);
         if (seats == null) {
@@ -169,6 +181,7 @@ public class Flight {
         return count;
     }
 
+    // Add a passenger to the waitlist for a given class type
     public int addToWaitList(Passenger passenger, String classType) {
         if (isPassengerBookedAnywhere(passenger)) {
             System.out.println("Passenger is already booked. Cannot add to waitlist.");
@@ -187,6 +200,7 @@ public class Flight {
         return new ArrayList<>(waitList).indexOf(passenger) + 1;
     }
 
+    // Get the waitlist for a given class type
     private Queue<Passenger> getWaitList(String classType) {
         switch (classType.toLowerCase()) {
             case "first":
@@ -200,6 +214,7 @@ public class Flight {
         }
     }
 
+    // Remove a passenger from the waitlist
     public boolean removeFromWaitList(Passenger passenger) {
         boolean removed = false;
         Passenger nextPassenger = null;
@@ -227,12 +242,14 @@ public class Flight {
         return removed;
     }
 
+    // Check if a passenger is on any waitlist
     public boolean isPassengerInWaitlist(Passenger passenger) {
         return firstClassWaitList.contains(passenger) ||
                 businessClassWaitList.contains(passenger) ||
                 economyClassWaitList.contains(passenger);
     }
 
+    // Check if a passenger is booked anywhere (in seats or waitlists)
     public boolean isPassengerBookedAnywhere(Passenger passenger) {
         return isPassengerInSeatsList(firstClassSeats, passenger) ||
                 isPassengerInSeatsList(businessClassSeats, passenger) ||
@@ -240,6 +257,7 @@ public class Flight {
                 isPassengerInWaitlist(passenger);
     }
 
+    // toString method to provide a string representation of the flight
     @Override
     public String toString() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -249,10 +267,12 @@ public class Flight {
                 " to " + arrivalAirport;
     }
 
+    // Placeholder for cancel booking method, not yet implemented
     public void cancelBooking(Passenger passenger) {
 
     }
 
+    // Getters and setters for flight details
     public int getFlightNumber() {
         return flightNumber;
     }
@@ -308,8 +328,4 @@ public class Flight {
     public void setEconomyClassSeats(List<Seat> economyClassSeats) {
         this.economyClassSeats = economyClassSeats;
     }
-
-
-
-
 }

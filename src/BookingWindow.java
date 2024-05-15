@@ -17,7 +17,7 @@ public class BookingWindow extends JFrame {
 
     // Initialize the booking window
     private void setupWindow() {
-        setTitle("Book Flight: " + flight.getFlightNumber());
+        setTitle("Flight booker");
         setSize(700, 400);
         setLocationRelativeTo(null); // Center the window
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -58,24 +58,24 @@ public class BookingWindow extends JFrame {
 
         // Booking buttons for each class
         bookFirstClassButton = new JButton("Book First Class");
-        bookFirstClassButton.addActionListener(e -> handleBooking("First"));
+        bookFirstClassButton.addActionListener(e -> Booking("First"));
         panel.add(bookFirstClassButton);
 
         bookBusinessClassButton = new JButton("Book Business Class");
-        bookBusinessClassButton.addActionListener(e -> handleBooking("Business"));
+        bookBusinessClassButton.addActionListener(e -> Booking("Business"));
         panel.add(bookBusinessClassButton);
 
         bookEconomyClassButton = new JButton("Book Economy");
-        bookEconomyClassButton.addActionListener(e -> handleBooking("Economy"));
+        bookEconomyClassButton.addActionListener(e -> Booking("Economy"));
         panel.add(bookEconomyClassButton);
 
         // Waitlist action buttons
         joinWaitlistButton = new JButton("Join Waitlist");
-        joinWaitlistButton.addActionListener(e -> handleWaitlist());
+        joinWaitlistButton.addActionListener(e -> Waitlist());
         panel.add(joinWaitlistButton);
 
         leaveWaitlistButton = new JButton("Leave Waitlist");
-        leaveWaitlistButton.addActionListener(e -> handleRemoveFromWaitlist());
+        leaveWaitlistButton.addActionListener(e -> RemoveFromWaitlist());
         panel.add(leaveWaitlistButton);
 
         updateButtons(); // Update button states based on availability
@@ -88,7 +88,7 @@ public class BookingWindow extends JFrame {
     }
 
     // Handle booking a seat in a specified class
-    private void handleBooking(String classType) {
+    private void Booking(String classType) {
         flight.handlePassengerBooking(passenger, classType);
 
         updateLabels();
@@ -96,7 +96,7 @@ public class BookingWindow extends JFrame {
     }
 
     // Handle adding the passenger to a waitlist
-    private void handleWaitlist() {
+    private void Waitlist() {
         String[] options = {"First", "Business", "Economy"};
         String classType = (String) JOptionPane.showInputDialog(this, "Select class to join waitlist:", "Waitlist", JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
         if (classType != null) {
@@ -111,7 +111,7 @@ public class BookingWindow extends JFrame {
     }
 
     // Handle removing the passenger from the waitlist
-    private void handleRemoveFromWaitlist() {
+    private void RemoveFromWaitlist() {
         if (flight.removeFromWaitList(passenger)) {
             JOptionPane.showMessageDialog(this, "Removed from waiting list.");
         } else {
