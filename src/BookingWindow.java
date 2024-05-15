@@ -2,150 +2,136 @@ import javax.swing.*;
 import java.awt.*;
 
 public class BookingWindow extends JFrame {
-    private Flight flight;
-    private Passenger passenger;
+    private Flight flight; // The flight being booked
+    private Passenger passenger; // The passenger making the booking
 
-    private JLabel first, business, economy;
-    private JButton firstClassBook, businessClassBook, economyBook;
-    private JButton firstWaitlist, businessWaitlist, economyWaitlist;
-    private JButton removeFromWaitlistButton;
+    private JLabel firstClassLabel, businessClassLabel, economyClassLabel; // Labels to show seat availability
+    private JButton bookFirstClassButton, bookBusinessClassButton, bookEconomyClassButton; // Buttons for booking seats
+    private JButton joinWaitlistButton, leaveWaitlistButton; // Buttons for waitlist actions
 
     public BookingWindow(Flight flight, Passenger passenger) {
         this.flight = flight;
         this.passenger = passenger;
+        setupWindow(); // Set up the booking window
+    }
+
+    // Initialize the booking window
+    private void setupWindow() {
         setTitle("Book Flight: " + flight.getFlightNumber());
-        setSize(600, 400);
-        setLayout(new GridLayout(0, 1));
+        setSize(700, 400);
+        setLocationRelativeTo(null); // Center the window
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout());
 
-        // Initialize labels
-        first = new JLabel("First Class Seats Available: " + flight.getAvailableSeats("First"));
-        business = new JLabel("Business Class Seats Available: " + flight.getAvailableSeats("Business"));
-        economy = new JLabel("Economy Seats Available: " + flight.getAvailableSeats("Economy"));
-        add(first);
-        add(business);
-        add(economy);
+        JPanel infoPanel = createInfoPanel(); // Panel to show seat availability
+        JPanel actionPanel = createActionPanel(); // Panel for booking and waitlist actions
 
-        // Initialize booking buttons
-        initBookingButtons();
+        add(infoPanel, BorderLayout.CENTER); // Add the info panel to the center
+        add(actionPanel, BorderLayout.SOUTH); // Add the action panel to the bottom
 
-        // Initialize waitlist buttons
-        initWaitlistButtons();
-
-        // Initialize "Remove from Waiting List" button
-        initRemoveFromWaitlistButton();
-
-        setVisible(true);
+        setVisible(true); // Make the window visible
     }
 
-    private void initBookingButtons() {
-        firstClassBook = new JButton("Book First Class");
-        businessClassBook = new JButton("Book Business Class");
-        economyBook = new JButton("Book Economy");
+    // Create a panel to display seat availability
+    private JPanel createInfoPanel() {
+        JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        firstClassBook.addActionListener(e -> handleBooking("First"));
-        businessClassBook.addActionListener(e -> handleBooking("Business"));
-        economyBook.addActionListener(e -> handleBooking("Economy"));
+        // Labels showing the number of available seats for each class
+        firstClassLabel = new JLabel("First Class Seats Available: " + getAvailableSeats("First"));
+        businessClassLabel = new JLabel("Business Class Seats Available: " + getAvailableSeats("Business"));
+        economyClassLabel = new JLabel("Economy Seats Available: " + getAvailableSeats("Economy"));
 
-        updateBookingButtons();
+        panel.add(new JLabel("First Class:"));
+        panel.add(firstClassLabel);
+        panel.add(new JLabel("Business Class:"));
+        panel.add(businessClassLabel);
+        panel.add(new JLabel("Economy Class:"));
+        panel.add(economyClassLabel);
+
+        return panel;
     }
 
-    private void initWaitlistButtons() {
-        firstWaitlist = new JButton("Join First Class Waitlist");
-        businessWaitlist = new JButton("Join Business Waitlist");
-        economyWaitlist = new JButton("Join Economy Waitlist");
+    // Create a panel with booking and waitlist action buttons
+    private JPanel createActionPanel() {
+        JPanel panel = new JPanel(new FlowLayout());
 
-        firstWaitlist.addActionListener(e -> handleWaitlist("First"));
-        businessWaitlist.addActionListener(e -> handleWaitlist("Business"));
-        economyWaitlist.addActionListener(e -> handleWaitlist("Economy"));
+        // Booking buttons for each class
+        bookFirstClassButton = new JButton("Book First Class");
+        bookFirstClassButton.addActionListener(e -> handleBooking("First"));
+        panel.add(bookFirstClassButton);
 
-        updateWaitlistButtons();
+        bookBusinessClassButton = new JButton("Book Business Class");
+        bookBusinessClassButton.addActionListener(e -> handleBooking("Business"));
+        panel.add(bookBusinessClassButton);
+
+        bookEconomyClassButton = new JButton("Book Economy");
+        bookEconomyClassButton.addActionListener(e -> handleBooking("Economy"));
+        panel.add(bookEconomyClassButton);
+
+        // Waitlist action buttons
+        joinWaitlistButton = new JButton("Join Waitlist");
+        joinWaitlistButton.addActionListener(e -> handleWaitlist());
+        panel.add(joinWaitlistButton);
+
+        leaveWaitlistButton = new JButton("Leave Waitlist");
+        leaveWaitlistButton.addActionListener(e -> handleRemoveFromWaitlist());
+        panel.add(leaveWaitlistButton);
+
+        updateButtons(); // Update button states based on availability
+        return panel;
     }
 
-    private void initRemoveFromWaitlistButton() {
-        removeFromWaitlistButton = new JButton("Remove from Waiting List");
-        removeFromWaitlistButton.addActionListener(e -> handleRemoveFromWaitlist());
-
-        updateRemoveFromWaitlistButton();
+    // Get the number of available seats for a given class
+    private int getAvailableSeats(String classType) {
+        return flight.getAvailableSeats(classType);
     }
 
+    // Handle booking a seat in a specified class
     private void handleBooking(String classType) {
         flight.handlePassengerBooking(passenger, classType);
 
-        updateSeatAvailability();
-        updateWaitlistButtons();
-        updateRemoveFromWaitlistButton();
+        updateLabels();
+        updateButtons();
     }
 
-    private void handleWaitlist(String classType) {
-        int position = flight.addToWaitList(passenger, classType);
-        System.out.println("Position in waitlist for " + classType + ": " + position);
-
-        updateRemoveFromWaitlistButton();
+    // Handle adding the passenger to a waitlist
+    private void handleWaitlist() {
+        String[] options = {"First", "Business", "Economy"};
+        String classType = (String) JOptionPane.showInputDialog(this, "Select class to join waitlist:", "Waitlist", JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+        if (classType != null) {
+            if (getAvailableSeats(classType) > 0) {
+                JOptionPane.showMessageDialog(this, "Seats are available in " + classType + " class. You cannot join the waitlist.");
+            } else {
+                int position = flight.addToWaitList(passenger, classType);
+                JOptionPane.showMessageDialog(this, "Added to " + classType + " waitlist. Position: " + position);
+            }
+        }
+        updateButtons(); // Update button states
     }
 
+    // Handle removing the passenger from the waitlist
     private void handleRemoveFromWaitlist() {
         if (flight.removeFromWaitList(passenger)) {
             JOptionPane.showMessageDialog(this, "Removed from waiting list.");
         } else {
             JOptionPane.showMessageDialog(this, "Passenger is not on any waiting list.");
         }
-        updateRemoveFromWaitlistButton();
+        updateButtons(); // Update button states
     }
 
-    private void updateSeatAvailability() {
-        first.setText("First Class Seats Available: " + flight.getAvailableSeats("First"));
-        business.setText("Business Class Seats Available: " + flight.getAvailableSeats("Business"));
-        economy.setText("Economy Seats Available: " + flight.getAvailableSeats("Economy"));
-
-        updateBookingButtons();
+    // Update seat availability labels
+    private void updateLabels() {
+        firstClassLabel.setText("First Class Seats Available: " + getAvailableSeats("First"));
+        businessClassLabel.setText("Business Class Seats Available: " + getAvailableSeats("Business"));
+        economyClassLabel.setText("Economy Seats Available: " + getAvailableSeats("Economy"));
     }
 
-    private void updateBookingButtons() {
-        if (flight.getAvailableSeats("First") > 0) {
-            if (!firstClassBook.isShowing()) add(firstClassBook);
-        } else {
-            if (firstClassBook.isShowing()) remove(firstClassBook);
-        }
-
-        if (flight.getAvailableSeats("Business") > 0) {
-            if (!businessClassBook.isShowing()) add(businessClassBook);
-        } else {
-            if (businessClassBook.isShowing()) remove(businessClassBook);
-        }
-
-        if (flight.getAvailableSeats("Economy") > 0) {
-            if (!economyBook.isShowing()) add(economyBook);
-        } else {
-            if (economyBook.isShowing()) remove(economyBook);
-        }
-
-        revalidate();
-        repaint();
-    }
-
-    private void updateWaitlistButtons() {
-        firstWaitlist.setVisible(flight.getAvailableSeats("First") == 0);
-        businessWaitlist.setVisible(flight.getAvailableSeats("Business") == 0);
-        economyWaitlist.setVisible(flight.getAvailableSeats("Economy") == 0);
-
-        if (!firstWaitlist.isShowing()) add(firstWaitlist);
-        if (!businessWaitlist.isShowing()) add(businessWaitlist);
-        if (!economyWaitlist.isShowing()) add(economyWaitlist);
-
-        revalidate();
-        repaint();
-    }
-
-    private void updateRemoveFromWaitlistButton() {
-        boolean isOnWaitlist = flight.isPassengerInWaitlist(passenger);
-
-        if (isOnWaitlist) {
-            if (!removeFromWaitlistButton.isShowing()) add(removeFromWaitlistButton);
-        } else {
-            if (removeFromWaitlistButton.isShowing()) remove(removeFromWaitlistButton);
-        }
-
-        revalidate();
-        repaint();
+    // Update the states of booking and waitlist buttons
+    private void updateButtons() {
+        bookFirstClassButton.setEnabled(getAvailableSeats("First") > 0);
+        bookBusinessClassButton.setEnabled(getAvailableSeats("Business") > 0);
+        bookEconomyClassButton.setEnabled(getAvailableSeats("Economy") > 0);
+        leaveWaitlistButton.setEnabled(flight.isPassengerInWaitlist(passenger));
     }
 }
